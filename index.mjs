@@ -5,6 +5,58 @@ import { Readable } from 'stream';
 const s3 = new AWS.S3();
 const ses = new AWS.SES({ region: 'us-west-1' });
 
+class CircuitBreaker {
+  constructor(failureThreshold = 5, successThreshold = 2, timeout = 30000) {
+    this.failureThreshold = failureThreshold;
+    this.successThreshold = successThreshold;
+    this.timeout = timeout;
+    this.state = 'CLOSED';
+    this.failureCount = 0;
+    this.successCount = 0;
+    this.nextAttempt = Date.now();
+  }
+
+  async call(action) {
+    if (this.state === 'OPEN') {
+      if (Date.now() > this.nextAttempt) {
+        this.state = 'HALF';
+      } else {
+        throw new Error('Circuit is open');
+      }
+    }
+
+    try {
+      const result = await action();
+      this.onSuccess();
+      return result;
+    } catch (error) {
+      this.onFailure();
+      throw error;
+    }
+  }
+
+  onSuccess() {
+    if (this.state === 'HALF') {
+      this.successCount++;
+      if (this.successCount > this.successThreshold) {
+        this.state = 'CLOSED';
+        this.failureCount = 0;
+        this.successCount = 0;
+      }
+    }
+  }
+
+  onFailure() {
+    this.failureCount++;
+    if (this.failureCount >= this.failureThreshold) {
+      this.state = 'OPEN';
+      this.nextAttempt = Date.now() + this.timeout;
+    }
+  }
+}
+
+const circuitBreaker = new CircuitBreaker();
+
 /**
  * Lambda function handler.
  * @param {Object} event - The event object provided by AWS Lambda, typically an S3 event.
@@ -35,8 +87,8 @@ export const handler = async (event) => {
     // Parse the CSV file to extract recipient information
     const recipients = await parseCSV(data.Body);
 
-    // Send emails to all recipients
-    const emailPromises = recipients.map((recipient) => sendEmail(recipient));
+    // Send emails to all recipients using circuit breaker
+    const emailPromises = recipients.map((recipient) => sendEmailWithCircuitBreaker(recipient));
     await Promise.all(emailPromises);
 
     console.log('Emails sent successfully');
@@ -80,10 +132,14 @@ const parseCSV = async (buffer) => {
 };
 
 /**
- * Sends an email using AWS SES.
+ * Sends an email using AWS SES with retry logic.
  * @param {Object} recipient - An object containing recipient name and email.
+ * @param {number} attempt - Current retry attempt number.
  */
-const sendEmail = async (recipient) => {
+const sendEmailWithRetry = async (recipient, attempt = 1) => {
+  const maxRetries = 3;
+  const retryDelay = 1000 * Math.pow(2, attempt); // Exponential backoff
+
   const params = {
     Destination: {
       ToAddresses: [recipient.email],
@@ -94,7 +150,7 @@ const sendEmail = async (recipient) => {
       },
       Subject: { Data: 'Test Email' },
     },
-    Source: 'ezsenderaws@gmail.com',  // Use your verified SES email address
+    Source: 'ezsenderaws@gmail.com',
   };
 
   try {
@@ -102,6 +158,42 @@ const sendEmail = async (recipient) => {
     console.log(`Email sent to ${recipient.email}`);
   } catch (error) {
     console.error(`Failed to send email to ${recipient.email}:`, error);
-    throw error;
+
+    if (attempt < maxRetries && isTransientError(error)) {
+      console.log(`Retrying to send email to ${recipient.email} (Attempt ${attempt + 1})...`);
+      await delay(retryDelay);
+      return sendEmailWithRetry(recipient, attempt + 1);
+    } else {
+      console.error(`Max retries reached. Could not send email to ${recipient.email}.`);
+    }
+  }
+};
+
+/**
+ * Determines if an error is a transient error.
+ * @param {Error} error - The error object.
+ * @returns {boolean} True if the error is transient, otherwise false.
+ */
+const isTransientError = (error) => {
+  const transientErrors = ['Throttling', 'InternalFailure', 'ServiceUnavailable'];
+  return transientErrors.includes(error.code);
+};
+
+/**
+ * Delays execution for a specified amount of time.
+ * @param {number} ms - The delay time in milliseconds.
+ * @returns {Promise} A promise that resolves after the delay.
+ */
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Sends an email using AWS SES with a circuit breaker.
+ * @param {Object} recipient - An object containing recipient name and email.
+ */
+const sendEmailWithCircuitBreaker = async (recipient) => {
+  try {
+    await circuitBreaker.call(() => sendEmailWithRetry(recipient));
+  } catch (error) {
+    console.error(`Circuit breaker activated for email to ${recipient.email}:`, error);
   }
 };
