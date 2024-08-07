@@ -1,31 +1,51 @@
 body {
+    background-color: #00bfbf;
     font-family: Arial, sans-serif;
-    background-color: #f8f9fa;
-    margin: 0;
-    padding: 0;
   }
   
-  .drop-zone {
-    background-color: #e9ecef;
-    color: #6c757d;
-    text-align: center;
+  #upload-card {
+    background-color: #0077b3;
+    border-radius: 10px;
+    color: white;
+    padding: 30px;
+    width: 400px;
+  }
+  
+  .file-drop-area {
+    border: 2px dashed #ffffff;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    text-align: center;
   }
   
-  .drop-zone:hover {
-    background-color: #d6d8db;
+  .file-drop-area:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .btn-outline-light {
+    border: 2px solid #ffffff;
+    color: #ffffff;
+  }
+  
+  .btn-outline-light:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+  
+  .progress {
+    height: 30px;
   }
   
   .progress-bar {
-    transition: width 0.4s ease;
+    background-color: #00e6e6;
   }
   
-  .alert {
-    display: none;
-  }
-  
-  .alert[aria-hidden="false"] {
-    display: block;
+  .alert-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border-color: #bee5eb;
+    border-radius: 5px;
+    padding: 10px;
   }
   

@@ -1,54 +1,62 @@
-const app = {
-    file: null,
-    progress: 0,
-    statusMessage: '',
-    isSuccess: false,
-    isError: false,
+function selectFile(event, isDrop = false) {
+    const file = isDrop ? event.dataTransfer.files[0] : event.target.files[0];
+    if (file && file.type === 'text/csv') { // Only allow CSV files
+      this.fileSelected = true;
+      this.fileName = file.name;
+      this.progress = 0; // Reset progress when a new file is selected
+      this.uploading = false; // Reset uploading state
+    } else if (file) {
+      alert('Please select a valid CSV file.');
+      this.fileSelected = false;
+      this.fileName = '';
+    }
+  }
   
-    handleFileUpload(event) {
-      const files = event.target.files || event.dataTransfer.files;
-      if (files.length) {
-        this.file = files[0];
-        this.statusMessage = 'File ready to upload';
-        this.isSuccess = false;
-        this.isError = false;
-      }
-    },
+  function triggerFileSelect() {
+    document.getElementById('fileInput').click();
+  }
   
-    async uploadFile() {
-      if (!this.file) {
-        this.statusMessage = 'No file selected';
-        this.isError = true;
-        return;
-      }
+  async function uploadFile() {
+    if (!this.fileSelected) {
+      alert('Please select a file first.');
+      return;
+    }
   
-      this.statusMessage = 'Uploading CSV...';
-      this.progress = 0;
+    this.progress = 0; // Reset progress at the start of an upload
+    this.uploading = true; // Set uploading state
+    const file = document.querySelector('input[type=file]').files[0];
+    const reader = new FileReader();
   
-      const formData = new FormData();
-      formData.append('file', this.file);
-  
+    reader.onload = async () => {
       try {
-        const response = await fetch('<API-Gateway-Endpoint>', {
+        const response = await fetch('<YOUR_API_GATEWAY_ENDPOINT>', { // Update with your API Gateway endpoint
           method: 'POST',
-          body: formData,
+          body: reader.result,
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            'x-amz-meta-filename': this.fileName, // Custom metadata header to pass filename
+          },
         });
   
         if (response.ok) {
-          const result = await response.json();
-          this.statusMessage = 'Emails sent successfully!';
-          this.isSuccess = true;
           this.progress = 100;
+          this.uploading = false; // Reset uploading state
+          alert('File uploaded successfully');
         } else {
-          throw new Error('Failed to upload file');
+          alert('Failed to upload file. Please try again.');
         }
       } catch (error) {
         console.error('Upload failed:', error);
-        this.statusMessage = 'Error uploading file';
-        this.isError = true;
+        alert('An error occurred during the upload. Please try again.');
       }
-    }
-  };
+    };
   
-  export default app;
+    reader.onprogress = (event) => {
+      if (event.lengthComputable) {
+        this.progress = Math.round((event.loaded / event.total) * 100);
+      }
+    };
+  
+    reader.readAsArrayBuffer(file);
+  }
   

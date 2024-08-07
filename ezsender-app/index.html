@@ -4,43 +4,44 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EZSender App</title>
-  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-pzjw8f+ua7Kw1TIq6Kj+5f5aU5aqTf96kzx8+jAq1a58K2F3h5jyJKaQswvxg3wB" crossorigin="anonymous">
-  <link href="styles/main.css?v=1.0" rel="stylesheet">
-  <script src="https://unpkg.com/petite-vue@0.4.0" defer init></script>
+  <title>EZSender Email App</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Petite Vue -->
+  <script src="https://unpkg.com/petite-vue" defer init></script>
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="styles/main.css">
 </head>
 
 <body>
-  <div v-scope="app" class="container mt-5">
-    <h1 class="mb-4">EZSender Email App</h1>
-
-    <!-- File Upload Form -->
-    <div class="form-group">
-      <label for="fileInput">Select CSV File</label>
-      <input type="file" id="fileInput" class="form-control-file" @change="handleFileUpload">
-      <div class="drop-zone mt-3 p-3 border border-dashed" @dragover.prevent @drop="handleFileUpload">
-        Drag and drop your CSV file here
+  <div v-scope="{ progress: 0, fileSelected: false, fileName: '', uploading: false, selectFile, triggerFileSelect, uploadFile }"
+       class="container d-flex justify-content-center align-items-center vh-100">
+    <div class="card text-center shadow-lg" id="upload-card">
+      <div class="card-body">
+        <h1 class="card-title mb-4">EZSender Email App</h1>
+        <div class="file-drop-area" @dragover.prevent @drop.prevent="selectFile($event, true)">
+          <input type="file" id="fileInput" accept=".csv" @change="selectFile($event)" hidden>
+          <button class="btn btn-outline-light mb-2" @click="triggerFileSelect">Choose a file</button>
+          <p class="mb-2" v-if="fileName">File selected: {{ fileName }}</p>
+          <p v-else>or drag it here</p>
+          <!-- New Element to Display File Ready Status -->
+          <div v-if="fileName && !uploading" class="alert alert-info mt-2" role="alert">
+            File is ready for upload
+          </div>
+        </div>
+        <button class="btn btn-success btn-lg" :disabled="!fileSelected" @click="uploadFile">Upload</button>
+        <div class="progress mt-3" v-if="uploading">
+          <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" :style="{ width: progress + '%' }">{{ progress }}%</div>
+        </div>
       </div>
     </div>
-
-    <!-- Progress Bar -->
-    <div class="progress mt-4">
-      <div class="progress-bar progress-bar-striped" role="progressbar" :style="{ width: progress + '%' }" :aria-valuenow="progress" aria-valuemin="0" aria-valuemax="100">
-        {{ progress }}%
-      </div>
-    </div>
-
-    <!-- Status Message -->
-    <div class="alert mt-3" :class="{'alert-success': isSuccess, 'alert-danger': isError}" v-if="statusMessage">
-      {{ statusMessage }}
-    </div>
-
-    <!-- Upload Button -->
-    <button class="btn btn-primary mt-3" @click="uploadFile">Upload and Send Emails</button>
   </div>
-
-  <!-- Main JS with versioning for cache busting -->
-  <script type="module" src="scripts/main.js?v=1.0"></script>
+  <!-- Bootstrap JS -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <!-- Custom JS -->
+  <script src="scripts/main.js"></script>
 </body>
 
 </html>
