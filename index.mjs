@@ -87,9 +87,16 @@ export const handler = async (event) => {
     // Parse the CSV file to extract recipient information
     const recipients = await parseCSV(data.Body);
 
-    // Send emails to all recipients using circuit breaker
-    const emailPromises = recipients.map((recipient) => sendEmailWithCircuitBreaker(recipient));
-    await Promise.all(emailPromises);
+    // Define batch size for processing emails
+    const batchSize = 10;
+
+    // Send emails in batches using circuit breaker
+    for (let i = 0; i < recipients.length; i += batchSize) {
+      const batch = recipients.slice(i, i + batchSize);
+      const emailPromises = batch.map((recipient) => sendEmailWithCircuitBreaker(recipient));
+      await Promise.all(emailPromises);
+      console.log(`Batch ${i / batchSize + 1} processed successfully.`);
+    }
 
     console.log('Emails sent successfully');
     return { statusCode: 200, body: 'Emails sent successfully' };
