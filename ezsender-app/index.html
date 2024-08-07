@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EZSender App</title>
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-pzjw8f+ua7Kw1TIq6Kj+5f5aU5aqTf96kzx8+jAq1a58K2F3h5jyJKaQswvxg3wB" crossorigin="anonymous">
+  <link href="styles/main.css?v=1.0" rel="stylesheet">
+  <script src="https://unpkg.com/petite-vue@0.4.0" defer init></script>
+</head>
+
+<body>
+  <div v-scope="app" class="container mt-5">
+    <h1 class="mb-4">EZSender Email App</h1>
+
+    <!-- File Upload Form -->
+    <div class="form-group">
+      <label for="fileInput">Select CSV File</label>
+      <input type="file" id="fileInput" class="form-control-file" @change="handleFileUpload">
+      <div class="drop-zone mt-3 p-3 border border-dashed" @dragover.prevent @drop="handleFileUpload">
+        Drag and drop your CSV file here
+      </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="progress mt-4">
+      <div class="progress-bar progress-bar-striped" role="progressbar" :style="{ width: progress + '%' }" :aria-valuenow="progress" aria-valuemin="0" aria-valuemax="100">
+        {{ progress }}%
+      </div>
+    </div>
+
+    <!-- Status Message -->
+    <div class="alert mt-3" :class="{'alert-success': isSuccess, 'alert-danger': isError}" v-if="statusMessage">
+      {{ statusMessage }}
+    </div>
+
+    <!-- Upload Button -->
+    <button class="btn btn-primary mt-3" @click="uploadFile">Upload and Send Emails</button>
+  </div>
+
+  <!-- Main JS with versioning for cache busting -->
+  <script type="module" src="scripts/main.js?v=1.0"></script>
+</body>
+
+</html>

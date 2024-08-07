@@ -1,0 +1,31 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f8f9fa;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .drop-zone {
+    background-color: #e9ecef;
+    color: #6c757d;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .drop-zone:hover {
+    background-color: #d6d8db;
+  }
+  
+  .progress-bar {
+    transition: width 0.4s ease;
+  }
+  
+  .alert {
+    display: none;
+  }
+  
+  .alert[aria-hidden="false"] {
+    display: block;
+  }
+  
